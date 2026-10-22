@@ -30,7 +30,6 @@ DATA_ROOT = Path(
 # Main data directories
 RAW_DIR = DATA_ROOT / "raw"
 PROCESSED_DIR = DATA_ROOT / "processed"
-EXTERNAL_DIR = DATA_ROOT / "external"
 PREDICTIONS_DIR = DATA_ROOT / "predictions"
 EVALUATION_DIR = DATA_ROOT / "evaluation"
 PRODUCTS_DIR = DATA_ROOT / "products"
@@ -41,7 +40,7 @@ CMIP6_RAW_DIR = RAW_DIR / "cmip6"
 INPUT4MIPS_RAW_DIR = RAW_DIR / "input4mips"
 SOCAT_RAW_DIR = RAW_DIR / "socat"
 ERA5_RAW_DIR = RAW_DIR / "era5"
-NOAA_RAW_DIR = RAW_DIR / "noaa"
+NOAA_RAW_DIR = RAW_DIR / "noaa" #
 
 # Processed outputs
 SATELLITE_PROCESSED_DIR = PROCESSED_DIR / "satellite"
@@ -49,7 +48,7 @@ CMIP6_PROCESSED_DIR = PROCESSED_DIR / "cmip6"
 INPUT4MIPS_PROCESSED_DIR = PROCESSED_DIR / "input4mips"
 SOCAT_PROCESSED_DIR = PROCESSED_DIR / "socat"
 XGBOOST_PROCESSED_DIR = PROCESSED_DIR / "xgboost_thermal"
-MODEL_PROCESSED_DIR = PROCESSED_DIR / "models"
+MODEL_PROCESSED_DIR = PROCESSED_DIR / "models" #
 
 # Prediction outputs
 PRIOR_PREDICTIONS_DIR = PREDICTIONS_DIR / "prior" / "ensemble_members"
@@ -60,9 +59,11 @@ RESNET_EVALUATION_DIR = EVALUATION_DIR / "resnet_ensemble"
 PRODUCT_COMPARISON_DIR = EVALUATION_DIR / "product_comparison"
 
 # Input files
-NOAA_MBL_FILE = SATELLITE_RAW_DIR / "co2_GHGreference.1954248230_surface.txt"
 
-SOCAT_FILE = SOCAT_RAW_DIR / "SOCATv2026_tracks_gridded_monthly.nc"
+# download:  https://gml.noaa.gov/ccgg/mbl/data.php
+NOAA_MBL_FILE = SATELLITE_RAW_DIR / "co2_GHGreference.1096523808_surface.txt"  # new (1982-2025): 1954248230, old (1993-2024): 1096523808
+
+SOCAT_FILE = SOCAT_RAW_DIR / "SOCATv2026_tracks_gridded_monthly.nc"  # not v2025
 
 ERA5_FILE = ERA5_RAW_DIR / "era5_msl_full_monthly.nc"
 ERA5_TEST_FILE = ERA5_RAW_DIR / "era5_msl_2003_monthly_test.nc"
@@ -73,12 +74,13 @@ NOAA_MBL_ZARR = (
     / "noaa_gml_mbl_co2_1x1_monthly.zarr"
 )
 
+# will update multiobs + occii ==> + satellite covariates, xgboost
+
 SATELLITE_COVARIATES_ZARR = (
     SATELLITE_PROCESSED_DIR
-    / "satellite_covariates_1deg_1982_2024.zarr"
+    / "satellite_covariates_1deg_1970_2024.zarr"
 )
 
-# Legacy products - keep until satellite pipeline is switched over
 MULTIOBS_ZARR = (
     SATELLITE_PROCESSED_DIR
     / "multiobs_1deg_1993_2024.zarr"
@@ -87,11 +89,6 @@ MULTIOBS_ZARR = (
 OCCII_CHL_ZARR = (
     SATELLITE_PROCESSED_DIR
     / "occi_chl_1deg_1997_2024.zarr"
-)
-
-LEGACY_SATELLITE_COVARIATES_ZARR = (
-    SATELLITE_PROCESSED_DIR
-    / "satellite_covariates_1deg_1970_2024.zarr"
 )
 
 SOCAT_ZARR = (
@@ -148,7 +145,6 @@ def ensure_project_dirs():
         DATA_ROOT,
         RAW_DIR,
         PROCESSED_DIR,
-        EXTERNAL_DIR,
         PREDICTIONS_DIR,
         EVALUATION_DIR,
         PRODUCTS_DIR,
@@ -187,14 +183,52 @@ def ensure_project_dirs():
         directory.mkdir(parents=True, exist_ok=True)
 
 
-def print_paths():
-    """ Quick diagnostic for notebooks """
+def print_paths(*path_items) -> None:
+    """
+    Print selected project paths.
 
-    print(f"DATA_ROOT: {DATA_ROOT}")
-    print(f"RAW_DIR: {RAW_DIR}")
-    print(f"PROCESSED_DIR: {PROCESSED_DIR}")
-    print(f"PREDICTIONS_DIR: {PREDICTIONS_DIR}")
-    print(f"EVALUATION_DIR: {EVALUATION_DIR}")
-    print(f"PRODUCTS_DIR: {PRODUCTS_DIR}")
-    print(f"FIGURES_DIR: {FIGURES_DIR}")
-    print(f"CHECKPOINTS_DIR: {CHECKPOINTS_DIR}")
+    Each argument can be either:
+      - a Path object, printed using its final folder/file name
+      - a (label, Path) tuple, printed using the provided label
+
+    Examples
+    --------
+    print_paths(
+        ("CMIP6 raw", CMIP6_RAW_DIR),
+        ("CMIP6 processed", CMIP6_PROCESSED_DIR),
+        ("CMIP6 figures", CMIP6_FIGURES_DIR)
+    )
+    """
+
+    if not path_items:
+        path_items = [
+            ("Data root", DATA_ROOT),
+            ("Raw data", RAW_DIR),
+            ("Processed data", PROCESSED_DIR),
+            ("Predictions", PREDICTIONS_DIR),
+            ("Evaluation", EVALUATION_DIR),
+            ("External products", PRODUCTS_DIR),
+            ("Figures", FIGURES_DIR),
+            ("Checkpoints", CHECKPOINTS_DIR),
+        ]
+
+    for item in path_items:
+        if isinstance(item, tuple):
+            label, path = item
+        else:
+            label = item.name
+            path = item
+
+        print(f"{label}: {path}")
+
+def assert_exists(path, description=None):
+    """ Raise a clear error if a required input path does not exist """
+
+    if not path.exists():
+        label = description or str(path)
+        raise FileNotFoundError(
+            f"Required input not found: {label}\n"
+            f"Expected path: {path}\n"
+            "Check that the file has been downloaded/generated and that "
+            "HYDRA_PCO2_DATA_ROOT points to the correct data root."
+        )
