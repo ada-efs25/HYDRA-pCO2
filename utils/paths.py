@@ -61,7 +61,7 @@ PRODUCT_COMPARISON_DIR = EVALUATION_DIR / "product_comparison"
 # Input files
 
 # download:  https://gml.noaa.gov/ccgg/mbl/data.php
-NOAA_MBL_FILE = SATELLITE_RAW_DIR / "co2_GHGreference.1096523808_surface.txt"  # new (1982-2025): 1954248230, old (1993-2024): 1096523808
+NOAA_MBL_FILE = SATELLITE_RAW_DIR / "co2_GHGreference.1096523808_surface.txt"  # 1993-2024 surface
 
 SOCAT_FILE = SOCAT_RAW_DIR / "SOCATv2026_tracks_gridded_monthly.nc"  # not v2025
 
